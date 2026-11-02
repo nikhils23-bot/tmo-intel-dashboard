@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- BUILD = "2026-10-31.b1" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Life Science Tools Desk · APMEA{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static_file', fname='style.css') }}?v={{ BUILD }}">
+</head>
+<body>
+<header class="masthead">
+  <div class="wrap mast-row">
+    <a class="brand" href="{{ url_for('home') }}">
+      <span class="brand-mark">◆</span>
+      <span><b>Life Science Tools Desk</b><small>Industry dynamics · Asia Pacific, Middle East &amp; Africa</small></span>
+    </a>
+    <nav>
+      <a href="{{ url_for('home') }}">Grid</a>
+      <a href="{{ url_for('sources') }}">Sources</a>
+      <a href="{{ url_for('find') }}">Find</a>
+      <a href="{{ url_for('scan') }}">Scan</a>
+    </nav>
+  </div>
+</header>
+{% if PROGRESS.running %}
+<div class="banner">
+  <div class="wrap">Scan running: <b>{{ PROGRESS.stage }}</b>{% if PROGRESS.total %} ({{ PROGRESS.done }} / {{ PROGRESS.total }}){% endif %}.
+  Pages show the last saved results until it finishes. <a href="{{ url_for('scan') }}">Follow it live</a></div>
+</div>
+{% endif %}
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="wrap footer">
+  Build {{ BUILD }} · Public news, trade press and practitioner posts, filtered by rules and summarised by a model.
+  Briefs can be wrong; every claim links to its source.
+  · <a href="/features">features</a> · <a href="/debug">debug</a> · <a href="/api/data">data</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{# BUILD = "2026-10-31.b1" #}
+{% block title %}{{ REGION_LABEL[region] }} · {{ SEGMENT_LABEL[segment] }} · Life Science Tools Desk{% endblock %}
+{% block content %}
+<nav class="crumbs">
+  <a href="{{ url_for('home') }}">Grid</a> ›
+  <a href="{{ url_for('view', region=region, segment='all') }}">{{ REGION_LABEL[region] }}</a> ›
+  {{ SEGMENT_LABEL[segment] }}
+</nav>
+
+<div class="switcher">
+  {% for s in SEGMENTS %}
+    <a class="{% if s.key == segment %}on{% endif %}" href="{{ url_for('view', region=region, segment=s.key) }}">{{ s.label }}</a>
+  {% endfor %}
+</div>
+<div class="switcher small">
+  {% for r in REGIONS %}
+    <a class="{% if r.key == region %}on{% endif %}" href="{{ url_for('view', region=r.key, segment=segment) }}">{{ r.label }}</a>
+  {% endfor %}
+</div>
+
+<section class="theread">
+  <h1>{{ REGION_LABEL[region] }} · {{ SEGMENT_LABEL[segment] }}</h1>
+  <h2 class="kicker">The read</h2>
+  {% if brief %}
+    <p class="lede">{{ brief.read }}</p>
+    {% if brief.implications %}
+      <h3>What it means for an instruments and reagents supplier</h3>
+      <ul>{% for i in brief.implications %}<li>{{ i }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if brief.watch %}<p class="watch"><b>Watch next:</b> {{ brief.watch }}</p>{% endif %}
+    {% if brief.titles %}
+      <p class="small"><b>Key headlines:</b>
+      {% for t in brief.titles %}{% set u = brief.urls[loop.index0] if brief.urls and loop.index0 < brief.urls|length else None %}
+        {% if u %}<a href="{{ u }}" target="_blank" rel="noopener">{{ t }}</a>{% else %}{{ t }}{% endif %}{% if not loop.last %} · {% endif %}
+      {% endfor %}</p>
+    {% endif %}
+    <p class="muted small">Written from {{ brief.n }} stories by {{ brief.model or 'the model' }}.</p>
+  {% elif total < min_stories %}
+    <p class="muted">Only {{ total }} stor{{ 'y' if total == 1 else 'ies' }} here, so there is no brief. Two stories are not a pattern.</p>
+  {% else %}
+    <p class="muted">No brief yet for this cell{% if PROGRESS.running %}. The scan is still writing them{% endif %}.</p>
+  {% endif %}
+</section>
+
+<div class="panels">
+  <section class="panel signal">
+    <h2>Industry &amp; competitive signal <span class="muted">({{ total }})</span></h2>
+    {% if not stories %}<p class="muted">No stories filed here in the last scan.</p>{% endif %}
+    <ol class="stories">
+    {% for s in stories %}
+      <li>
+        <a class="headline" href="{{ s.url }}" target="_blank" rel="noopener">{{ s.title }}</a>
+        <div class="meta">
+          {{ s.source or 'unknown source' }} · {{ s.published|date }}
+          {% for o in s.origins or [] %}{% if region == 'global' %}<span class="chip">{{ o }}</span>{% endif %}{% endfor %}
+          {% for r in s.regions if r != region %}<span class="chip ghost">{{ REGION_LABEL.get(r, r) }}</span>{% endfor %}
+        </div>
+        {% if s.summary %}<p class="sum">{{ s.summary[:260] }}{% if s.summary|length > 260 %}…{% endif %}</p>{% endif %}
+        <div class="tags">
+          <span class="tag score">score {{ s.score }}</span>
+          {% for w in s.why %}<span class="tag">{{ w }}</span>{% endfor %}
+        </div>
+      </li>
+    {% endfor %}
+    </ol>
+    {% if total > stories|length %}<p class="muted small">Showing the newest {{ stories|length }} of {{ total }}. All are in <a href="/api/data">the data</a>.</p>{% endif %}
+  </section>
+
+  <div class="side">
+    <section class="panel rivals">
+      <h2>Competitor watch</h2>
+      {% if not rivals %}<p class="muted">No competitor moves in the last scan.</p>{% endif %}
+      <ul class="compact">
+      {% for r in rivals %}
+        <li>
+          <span class="rival">{{ r.rival }}</span>{% if r.global_move %} <span class="chip ghost">global move</span>{% endif %}
+          <a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title }}</a>
+          <div class="meta">{{ r.source }} · {{ r.published|date }}</div>
+        </li>
+      {% endfor %}
+      </ul>
+    </section>
+
+    <section class="panel voice">
+      <h2>Practitioner voice</h2>
+      {% if voice_brief %}
+        <p class="lede small">{{ voice_brief.read }}</p>
+        {% if voice_brief.themes %}<div class="tags">{% for t in voice_brief.themes %}<span class="tag">{{ t }}</span>{% endfor %}</div>{% endif %}
+      {% endif %}
+      {% if not voice %}
+        <p class="muted">No practitioner posts here.{% if region != 'global' %} Most lab communities are US- and Europe-based, so APMEA rows are often thin.{% endif %}</p>
+      {% endif %}
+      <ul class="compact">
+      {% for v in voice %}
+        <li>
+          <a href="{{ v.url }}" target="_blank" rel="noopener">{{ v.title }}</a>
+          <div class="meta">{{ v.source }} · {{ v.published|date }}{% if v.elsewhere %} <span class="chip ghost">other region</span>{% endif %}</div>
+        </li>
+      {% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

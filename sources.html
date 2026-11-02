@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{# BUILD = "2026-10-31.b1" #}
+{% block title %}Sources · Life Science Tools Desk{% endblock %}
+{% block content %}
+<h1>Sources</h1>
+{% if not data.generated %}
+  <p class="muted">No scan has finished yet, so there is nothing to report. Run one from the grid.</p>
+{% else %}
+<p class="muted">From the scan {{ data.generated|ago }}. {{ data.totals.raw or 0 }} unique items collected, {{ data.totals.news or 0 }} kept, {{ data.totals.near_misses or 0 }} near misses.</p>
+
+<div class="stats">
+  <div><b>{{ feeds|length }}</b><span>news requests</span></div>
+  <div class="{% if dead %}bad{% endif %}"><b>{{ dead|length }}</b><span>dead or empty</span></div>
+  <div><b>{{ rep.briefs_written or 0 }}</b><span>briefs written</span></div>
+  <div><b>{{ rep.briefs_skipped_thin or 0 }}</b><span>cells too thin</span></div>
+  <div><b>{{ rep.screened_out or 0 }}</b><span>posts screened out</span></div>
+  <div><b>{{ rep.learned|length if rep.learned else 0 }}</b><span>terms learned</span></div>
+  <div><b>{{ rep.rescued or 0 }}</b><span>stories rescued</span></div>
+</div>
+
+{% if rep.notes %}
+<section class="panel"><h2>Notes</h2><ul>{% for n in rep.notes %}<li>{{ n }}</li>{% endfor %}</ul></section>
+{% endif %}
+
+<section class="panel">
+  <h2>Dead or empty sources</h2>
+  <p class="muted small">Direct feeds could not be checked from the build session. Delete dead feed lines from <code>DIRECT_FEEDS</code> in <code>config.py</code>.
+  An empty site search usually means the publication had nothing new that week. One that stays empty for several weeks has probably moved domain.
+  English-language China coverage is thin by design; Chinese-language sources are out of scope for this version.</p>
+  {% if not dead %}<p class="ok">Every source returned items.</p>{% endif %}
+  <table class="tbl">
+  {% for f in dead %}
+    <tr><td>{{ f.label }}</td><td>{{ f.status }}</td><td>{{ f.error or 'no items' }}</td><td class="small">{{ f.url }}</td></tr>
+  {% endfor %}
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Model</h2>
+  <table class="tbl">
+    <tr><td>Key set</td><td>{{ ai.key_set }}</td></tr>
+    <tr><td>Model in use</td><td>{{ ai.model or 'not discovered in this process yet' }}</td></tr>
+    <tr><td>Settings accepted</td><td>{{ ai.profile }}</td></tr>
+    <tr><td>Calls this process</td><td>{{ ai.tally.calls }} ({{ ai.tally.ok }} ok, {{ ai.tally.failed }} failed, {{ ai.tally.probes }} probes)</td></tr>
+    <tr><td>Last error</td><td>{{ ai.last_error or '-' }}</td></tr>
+    {% if rep.ai %}<tr><td>At end of last scan</td><td>model {{ rep.ai.model }}, {{ rep.ai.tally.calls }} calls, last error: {{ rep.ai.last_error or '-' }}</td></tr>{% endif %}
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Vocabulary learned this scan</h2>
+  {% if rep.learned %}
+    <div class="tags">{% for t in rep.learned %}<span class="tag">{{ t }}</span>{% endfor %}</div>
+    {% if rep.learned_ambiguous %}
+      <h3>Ambiguous, with blockers</h3>
+      <ul class="small">{% for k, v in rep.learned_ambiguous.items() %}<li><b>{{ k }}</b>: {{ v|join(', ') }}</li>{% endfor %}</ul>
+    {% endif %}
+    <p class="muted small">Used to re-check near misses. Terms worth keeping permanently can be copied into <code>config.py</code>.</p>
+  {% else %}<p class="muted">Nothing learned this scan.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Competitor searches</h2>
+  <table class="tbl">{% for r in rep.rivals or [] %}
+    <tr><td>{{ r.name }}</td><td>{{ r.status }}</td><td>{{ r.items }} items</td><td>{{ r.error }}</td></tr>{% endfor %}</table>
+</section>
+
+<section class="panel">
+  <h2>Practitioner sources</h2>
+  <p class="small">Dropped by the rules before screening: {{ rep.prefiltered_out or 0 }} · screened out by the model: {{ rep.screened_out or 0 }}</p>
+  <h3>Reddit</h3>
+  <table class="tbl">{% for r in rep.reddit or [] %}
+    <tr><td>{{ r.query }}</td><td>{{ r.status }}</td><td>{{ r.items }} items</td><td>{{ r.error }}</td></tr>{% endfor %}</table>
+  <h3>YouTube</h3>
+  <table class="tbl">{% for r in rep.youtube or [] %}
+    <tr><td>{{ r.query }}</td><td>{{ r.status }}</td><td>{{ r.items }} items</td><td>{{ r.error }}</td></tr>{% endfor %}</table>
+</section>
+
+<section class="panel">
+  <h2>Every news request</h2>
+  <table class="tbl">
+    <tr><th>Source</th><th>Kind</th><th>HTTP</th><th>Items</th><th>Error</th></tr>
+    {% for f in feeds|sort(attribute='items') %}
+    <tr><td>{{ f.label }}</td><td>{{ f.kind }}</td><td>{{ f.status }}</td><td>{{ f.items }}</td><td>{{ f.error }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+{% if rep.timings %}<p class="muted small">Timings (s): {% for k, v in rep.timings.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+{% endif %}
+{% endblock %}

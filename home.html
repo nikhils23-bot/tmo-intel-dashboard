@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{# BUILD = "2026-10-31.b1" #}
+{% block content %}
+<section class="intro">
+  <div>
+    <h1>Coverage grid</h1>
+    <p class="muted">
+      {% if data.generated %}Last scan {{ data.generated|ago }} · {{ data.totals.news or 0 }} stories ·
+      {{ data.totals.rivals or 0 }} competitor moves · {{ data.totals.voice or 0 }} practitioner posts ·
+      {{ (data.briefs or {})|length }} briefs
+      {% else %}No scan yet. The first one starts automatically and takes about 25 minutes.{% endif %}
+    </p>
+  </div>
+  {% if not PROGRESS.running %}
+  <a class="button" href="{{ url_for('refresh') }}">Run scan now</a>
+  {% endif %}
+</section>
+
+<div class="grid-scroll">
+<table class="grid">
+  <thead><tr><th class="rowhead">Region</th>
+  {% for s in SEGMENTS %}<th>{{ s.label }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for r in REGIONS %}
+    <tr class="{{ r.type }}{% if r.parent %} child{% endif %}">
+      <th class="rowhead">{{ r.label }}{% if r.type == 'rollup' %}<small>roll-up</small>{% endif %}</th>
+      {% for s in SEGMENTS %}
+        {% set n = (grid.get(r.key) or {}).get(s.key, 0) %}
+        {% set b = briefs.get(r.key ~ ':' ~ s.key) %}
+        {% set level = 0 if n == 0 else (1 if n < 3 else (2 if n < 10 else (3 if n < 25 else 4))) %}
+        <td class="cell lvl{{ level }}">
+          <a href="{{ url_for('view', region=r.key, segment=s.key) }}">
+            <span class="count">{{ n }}</span>
+            {% if b %}<span class="dot" title="Brief written"></span>{% endif %}
+          </a>
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted small">Numbers are stories in the last {{ 30 }} days. A dot means a written brief. Cells with fewer than three stories get no brief.
+World holds stories that name no APMEA market. Asia Pacific adds up the three rows under it.</p>
+
+<section class="reads">
+  {% for key in ['apac:all', 'mea:all', 'global:all'] %}
+    {% set b = briefs.get(key) %}
+    {% set rk = key.split(':')[0] %}
+    <article class="card">
+      <h2><a href="{{ url_for('view', region=rk, segment='all') }}">{{ REGION_LABEL[rk] }}</a></h2>
+      {% if b %}
+        <p>{{ b.read }}</p>
+        {% if b.watch %}<p class="watch"><b>Watch:</b> {{ b.watch }}</p>{% endif %}
+      {% else %}
+        <p class="muted">No brief yet.</p>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>
+
+{% set spotted = (data.report or {}).get('spotted') or [] %}
+{% if spotted %}
+<section class="panel">
+  <h2>Companies getting attention that are on no list</h2>
+  <ul class="plain">
+  {% for c in spotted %}
+    <li><b>{{ c.name }}</b>: {{ c.why }}
+      {% for u in c.urls[:3] %}<a class="src" href="{{ u }}" target="_blank" rel="noopener">[{{ loop.index }}]</a>{% endfor %}</li>
+  {% endfor %}
+  </ul>
+  <p class="muted small">Spotted by the model from this week's stories. Add any that matter to <code>config.py</code>.</p>
+</section>
+{% endif %}
+{% endblock %}
