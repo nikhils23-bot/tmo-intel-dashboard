@@ -1,0 +1,21 @@
+# BUILD = "2026-10-31.b1"
+# Optional: Render can read this "blueprint" instead of the manual settings in
+# Part 9 of the brief. Secrets are NOT set here; add them in the Render dashboard.
+services:
+  - type: web
+    name: tmo-intel-dashboard
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 600
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.4
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: SCAN_PASSWORD
+        sync: false
